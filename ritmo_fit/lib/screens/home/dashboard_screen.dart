@@ -5,42 +5,31 @@ import 'package:ritmo_fit/providers/workout_provider.dart';
 import 'package:ritmo_fit/models/workout_model.dart';
 import 'package:ritmo_fit/providers/auth_provider.dart';
 
-class DashboardScreen extends StatefulWidget {
+class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
-}
-
-class _DashboardScreenState extends State<DashboardScreen> {
-  @override
-  void initState() {
-    super.initState();
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    final profile = Provider.of<ProfileProvider>(context, listen: false).selectedProfile;
-    if (profile != null) {
-      Provider.of<WorkoutProvider>(context, listen: false).setRoutines(profile.routines);
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final profile = Provider.of<ProfileProvider>(context).selectedProfile;
-    final workoutProvider = Provider.of<WorkoutProvider>(context);
-    final routines = workoutProvider.routines;
-    final user = Provider.of<AuthProvider>(context).currentUser;
+    final profile = context.watch<ProfileProvider>().selectedProfile;
+    final workoutProvider = context.watch<WorkoutProvider>();
+    final user = context.watch<AuthProvider>().currentUser;
 
     if (profile == null) {
       return const Center(
-        child: Text(
-          'Selecciona un perfil para ver tus rutinas',
-          style: TextStyle(fontSize: 18),
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Text(
+            'Para comenzar, crea o selecciona un perfil en la pestaña "Perfiles".',
+            style: TextStyle(fontSize: 18),
+            textAlign: TextAlign.center,
+          ),
         ),
       );
     }
+    
+    final weeklyPlan = workoutProvider.getWeeklyPlan(profile);
+    final todayRoutine = workoutProvider.getTodayRoutine(profile);
+    final routines = workoutProvider.routines;
 
     return Scaffold(
       body: ListView(
@@ -68,6 +57,53 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
             ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Plan semanal:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  ...weeklyPlan.entries.map((e) => Text('${e.key}: ${e.value}')),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.play_arrow),
+            label: const Text('Iniciar el día'),
+            onPressed: todayRoutine.isEmpty
+                ? null
+                : () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Rutina de hoy'),
+                        content: SizedBox(
+                          width: double.maxFinite,
+                          child: ListView(
+                            shrinkWrap: true,
+                            children: todayRoutine
+                                .map((ex) => ListTile(
+                                      title: Text(ex.name),
+                                      subtitle: Text('${ex.sets}x${ex.reps} - ${ex.description}'),
+                                    ))
+                                .toList(),
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Cerrar'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
           ),
           const SizedBox(height: 16),
           if (routines.isEmpty)

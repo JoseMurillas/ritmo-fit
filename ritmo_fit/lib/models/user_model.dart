@@ -74,6 +74,9 @@ class Profile {
   @HiveField(6)
   final List<WorkoutRoutine> routines;
 
+  @HiveField(7)
+  final Map<String, String>? weeklyPlan;
+
   Profile({
     required this.id,
     required this.name,
@@ -82,6 +85,7 @@ class Profile {
     required this.weight,
     required this.height,
     required this.routines,
+    this.weeklyPlan,
   });
 
   double get bmi => weight / (height * height);
@@ -102,6 +106,7 @@ class Profile {
       'weight': weight,
       'height': height,
       'routines': routines.map((r) => r.toJson()).toList(),
+      'weeklyPlan': weeklyPlan,
     };
   }
 
@@ -116,6 +121,7 @@ class Profile {
       routines: (json['routines'] as List)
           .map((r) => WorkoutRoutine.fromJson(r as Map<String, dynamic>))
           .toList(),
+      weeklyPlan: (json['weeklyPlan'] as Map?)?.map((k, v) => MapEntry(k as String, v as String)),
     );
   }
 } 

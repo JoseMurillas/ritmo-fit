@@ -228,4 +228,71 @@ class WorkoutProvider extends ChangeNotifier {
     
     return todayRoutines.first.exercises;
   }
+
+  Future<void> generateWeeklyPlan({
+    required String userId,
+    required String profileId,
+  }) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+      final user = await DatabaseService().getUser(userId);
+      if (user == null) throw Exception('Usuario no encontrado');
+      final profile = user.profiles.firstWhere((p) => p.id == profileId, orElse: () => throw Exception('Perfil no encontrado'));
+      final muscleGroups = ['Piernas', 'Pecho', 'Espalda', 'Brazos', 'Hombros', 'Core', 'Full Body'];
+      final Map<String, String> plan = {};
+      for (int i = 0; i < 7; i++) {
+        final day = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'][i];
+        plan[day] = muscleGroups[i % muscleGroups.length];
+      }
+      final updatedProfile = Profile(
+        id: profile.id,
+        name: profile.name,
+        age: profile.age,
+        gender: profile.gender,
+        weight: profile.weight,
+        height: profile.height,
+        routines: profile.routines,
+        weeklyPlan: plan,
+      );
+      final updatedUser = User(
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        password: user.password,
+        profiles: user.profiles.map((p) => p.id == profileId ? updatedProfile : p).toList(),
+      );
+      await DatabaseService().saveUser(updatedUser);
+      notifyListeners();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Map<String, String> getWeeklyPlan(Profile profile) {
+    return profile.weeklyPlan ?? {};
+  }
+
+  List<WorkoutExercise> getTodayRoutine(Profile profile) {
+    final plan = getWeeklyPlan(profile);
+    if (plan.isEmpty) return [];
+
+    final weekdays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+    final today = weekdays[DateTime.now().weekday - 1];
+    final targetGroup = plan[today];
+
+    if (targetGroup == null) {
+      return [];
+    }
+
+    try {
+      // Encuentra la rutina que coincide con el grupo muscular de hoy.
+      final routine = profile.routines.firstWhere((r) => r.targetMuscleGroup == targetGroup);
+      return routine.exercises;
+    } catch (e) {
+      // Si no se encuentra una rutina específica, devuelve una lista vacía.
+      return [];
+    }
+  }
 } 

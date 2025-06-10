@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:ritmo_fit/models/user_model.dart';
 import 'package:ritmo_fit/services/database_service.dart';
+import 'package:ritmo_fit/services/workout_service.dart';
+import 'package:ritmo_fit/models/workout_model.dart';
 import 'package:uuid/uuid.dart';
+import 'package:ritmo_fit/providers/workout_provider.dart';
 
 class ProfileProvider extends ChangeNotifier {
   final DatabaseService _databaseService = DatabaseService();
@@ -10,10 +14,16 @@ class ProfileProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
+  WorkoutProvider? _workoutProvider;
+
   List<Profile> get profiles => _profiles;
   Profile? get selectedProfile => _selectedProfile;
   bool get isLoading => _isLoading;
   String? get error => _error;
+
+  void setWorkoutProvider(WorkoutProvider workoutProvider) {
+    _workoutProvider = workoutProvider;
+  }
 
   Future<void> loadProfiles(String userId) async {
     _isLoading = true;
@@ -24,6 +34,9 @@ class ProfileProvider extends ChangeNotifier {
       final user = await _databaseService.getUser(userId);
       if (user != null) {
         _profiles = user.profiles;
+        if (_profiles.isNotEmpty && _selectedProfile == null) {
+          _selectedProfile = _profiles.first;
+        }
       }
     } catch (e) {
       _error = e.toString();
@@ -51,6 +64,35 @@ class ProfileProvider extends ChangeNotifier {
         throw Exception('Usuario no encontrado');
       }
 
+      // Generar plan semanal
+      final muscleGroups = ['Piernas', 'Pecho', 'Espalda', 'Brazos', 'Hombros', 'Core', 'Full Body'];
+      final Map<String, String> weeklyPlan = {};
+      for (int i = 0; i < 7; i++) {
+        final day = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'][i];
+        weeklyPlan[day] = muscleGroups[i % muscleGroups.length];
+      }
+      
+      final bmi = height > 0 ? weight / (height * height) : 0.0;
+      String bmiCategory;
+      if (bmi < 18.5) bmiCategory = 'Bajo peso';
+      else if (bmi < 25) bmiCategory = 'Normal';
+      else if (bmi < 30) bmiCategory = 'Sobrepeso';
+      else bmiCategory = 'Obesidad';
+
+      // Generar rutinas para el plan
+      final uniqueGroups = weeklyPlan.values.toSet().toList();
+      final List<WorkoutRoutine> generatedRoutines = [];
+      for (var group in uniqueGroups) {
+        final routine = WorkoutService.generateRoutine(
+          gender: gender,
+          bmiCategory: bmiCategory,
+          targetMuscleGroup: group,
+          age: age,
+          bmi: bmi,
+        );
+        generatedRoutines.add(routine);
+      }
+
       final profile = Profile(
         id: const Uuid().v4(),
         name: name,
@@ -58,7 +100,8 @@ class ProfileProvider extends ChangeNotifier {
         gender: gender,
         weight: weight,
         height: height,
-        routines: [], // Lista vacía de rutinas para un nuevo perfil
+        routines: generatedRoutines,
+        weeklyPlan: weeklyPlan,
       );
 
       final updatedProfiles = List<Profile>.from(user.profiles)..add(profile);
@@ -72,6 +115,10 @@ class ProfileProvider extends ChangeNotifier {
 
       await _databaseService.saveUser(updatedUser);
       _profiles = updatedProfiles;
+      
+      if (_selectedProfile == null || _profiles.length == 1) {
+        selectProfile(profile);
+      }
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -111,7 +158,8 @@ class ProfileProvider extends ChangeNotifier {
         gender: gender,
         weight: weight,
         height: height,
-        routines: user.profiles[profileIndex].routines,
+        routines: user.profiles[profileIndex].routines, // Conserva rutinas existentes
+        weeklyPlan: user.profiles[profileIndex].weeklyPlan, // Conserva plan existente
       );
 
       final updatedProfiles = List<Profile>.from(user.profiles);
@@ -137,11 +185,13 @@ class ProfileProvider extends ChangeNotifier {
 
   void selectProfile(Profile profile) {
     _selectedProfile = profile;
+    _workoutProvider?.setRoutines(profile.routines);
     notifyListeners();
   }
 
   void clearSelectedProfile() {
     _selectedProfile = null;
+    _workoutProvider?.setRoutines([]);
     notifyListeners();
   }
 } 
