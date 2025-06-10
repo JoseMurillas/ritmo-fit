@@ -12,6 +12,9 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  bool _isError = false;
+  String _errorMessage = '';
+
   @override
   void initState() {
     super.initState();
@@ -19,21 +22,37 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkAuthStatus() async {
-    await Future.delayed(const Duration(seconds: 2)); // Simular carga
-    if (!mounted) return;
+    try {
+      await Future.delayed(const Duration(seconds: 2)); // Simular carga
+      if (!mounted) return;
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    await authProvider.checkAuthStatus();
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      await authProvider.checkAuthStatus();
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (context) => authProvider.isAuthenticated
-            ? const HomeScreen()
-            : const LoginScreen(),
-      ),
-    );
+      if (authProvider.error != null) {
+        setState(() {
+          _isError = true;
+          _errorMessage = authProvider.error!;
+        });
+        return;
+      }
+
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => authProvider.isAuthenticated
+              ? const HomeScreen()
+              : const LoginScreen(),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isError = true;
+        _errorMessage = e.toString();
+      });
+    }
   }
 
   @override
@@ -60,8 +79,25 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            // Indicador de carga
-            const CircularProgressIndicator(),
+            if (_isError) ...[
+              Text(
+                'Error: $_errorMessage',
+                style: const TextStyle(color: Colors.red),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _isError = false;
+                    _errorMessage = '';
+                  });
+                  _checkAuthStatus();
+                },
+                child: const Text('Reintentar'),
+              ),
+            ] else
+              const CircularProgressIndicator(),
           ],
         ),
       ),

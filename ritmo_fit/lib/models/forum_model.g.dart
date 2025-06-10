@@ -8,7 +8,7 @@ part of 'forum_model.dart';
 
 class ForumMessageAdapter extends TypeAdapter<ForumMessage> {
   @override
-  final int typeId = 2;
+  final int typeId = 4;
 
   @override
   ForumMessage read(BinaryReader reader) {
@@ -57,7 +57,7 @@ class ForumMessageAdapter extends TypeAdapter<ForumMessage> {
 
 class ForumReplyAdapter extends TypeAdapter<ForumReply> {
   @override
-  final int typeId = 3;
+  final int typeId = 5;
 
   @override
   ForumReply read(BinaryReader reader) {

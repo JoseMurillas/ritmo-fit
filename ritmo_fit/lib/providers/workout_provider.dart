@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ritmo_fit/models/user_model.dart';
 import 'package:ritmo_fit/models/workout_model.dart';
 import 'package:ritmo_fit/services/database_service.dart';
+import 'package:ritmo_fit/services/workout_service.dart';
 import 'package:uuid/uuid.dart';
 
 class WorkoutProvider extends ChangeNotifier {
@@ -25,7 +26,6 @@ class WorkoutProvider extends ChangeNotifier {
     required String userId,
     required String profileId,
     required String targetMuscleGroup,
-    required String difficulty,
   }) async {
     try {
       _isLoading = true;
@@ -41,13 +41,12 @@ class WorkoutProvider extends ChangeNotifier {
         orElse: () => throw Exception('Perfil no encontrado'),
       );
 
-      final routine = WorkoutRoutine(
-        id: const Uuid().v4(),
-        name: 'Rutina ${targetMuscleGroup}',
-        description: 'Rutina de ${targetMuscleGroup.toLowerCase()} para nivel ${difficulty.toLowerCase()}',
+      final routine = WorkoutService.generateRoutine(
+        gender: profile.gender,
+        bmiCategory: profile.bmiCategory,
         targetMuscleGroup: targetMuscleGroup,
-        difficulty: difficulty,
-        exercises: _generateExercises(targetMuscleGroup, difficulty),
+        age: profile.age,
+        bmi: profile.bmi,
       );
 
       final updatedProfile = Profile(
@@ -191,5 +190,42 @@ class WorkoutProvider extends ChangeNotifier {
   void clearSelectedRoutine() {
     _selectedRoutine = null;
     notifyListeners();
+  }
+
+  Map<String, Map<String, dynamic>> getProgressMap() {
+    Map<String, Map<String, dynamic>> progressMap = {};
+
+    for (var routine in _routines) {
+      double progress =
+          routine.exercises.where((e) => e.status == 'completed').length /
+          routine.exercises.length *
+          100;
+
+      progressMap[routine.id] = {
+        'name': routine.name,
+        'progress': progress,
+        'completed': routine.exercises.where((e) => e.status == 'completed').length,
+        'total': routine.exercises.length,
+      };
+    }
+
+    return progressMap;
+  }
+
+  List<WorkoutExercise> getTodayWorkouts() {
+    final today = DateTime.now();
+    final dayOfWeek = today.weekday; // 1 = Monday, 7 = Sunday
+    
+    // Simulated logic: rotate muscle groups by day
+    final muscleGroups = ['Piernas', 'Brazos', 'Pecho', 'Hombros', 'Core'];
+    final targetGroup = muscleGroups[(dayOfWeek - 1) % muscleGroups.length];
+    
+    final todayRoutines = _routines.where((routine) => 
+      routine.targetMuscleGroup == targetGroup
+    ).toList();
+    
+    if (todayRoutines.isEmpty) return [];
+    
+    return todayRoutines.first.exercises;
   }
 } 

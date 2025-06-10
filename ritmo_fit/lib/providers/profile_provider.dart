@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:ritmo_fit/models/user_model.dart';
-import 'package:ritmo_fit/models/workout_model.dart';
 import 'package:ritmo_fit/services/database_service.dart';
 import 'package:uuid/uuid.dart';
 
@@ -59,6 +58,7 @@ class ProfileProvider extends ChangeNotifier {
         gender: gender,
         weight: weight,
         height: height,
+        routines: [], // Lista vacía de rutinas para un nuevo perfil
       );
 
       final updatedProfiles = List<Profile>.from(user.profiles)..add(profile);

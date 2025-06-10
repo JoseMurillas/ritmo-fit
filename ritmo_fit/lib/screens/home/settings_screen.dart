@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:ritmo_fit/providers/auth_provider.dart';
+import 'package:ritmo_fit/providers/theme_provider.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -33,19 +34,30 @@ class SettingsScreen extends StatelessWidget {
                     value: true, // TODO: Implementar estado de notificaciones
                     onChanged: (value) {
                       // TODO: Implementar cambio de estado de notificaciones
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Funcionalidad de notificaciones próximamente'),
+                        ),
+                      );
                     },
                   ),
                 ),
                 const Divider(),
-                ListTile(
-                  leading: const Icon(Icons.dark_mode),
-                  title: const Text('Modo Oscuro'),
-                  trailing: Switch(
-                    value: false, // TODO: Implementar estado del tema
-                    onChanged: (value) {
-                      // TODO: Implementar cambio de tema
-                    },
-                  ),
+                Consumer<ThemeProvider>(
+                  builder: (context, themeProvider, child) {
+                    return ListTile(
+                      leading: Icon(
+                        themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
+                      ),
+                      title: const Text('Modo Oscuro'),
+                      trailing: Switch(
+                        value: themeProvider.isDarkMode,
+                        onChanged: (value) {
+                          themeProvider.setDarkMode(value);
+                        },
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -76,7 +88,26 @@ class SettingsScreen extends StatelessWidget {
                   leading: const Icon(Icons.help),
                   title: const Text('Ayuda'),
                   onTap: () {
-                    // TODO: Implementar pantalla de ayuda
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Ayuda'),
+                        content: const Text(
+                          '¿Necesitas ayuda?\n\n'
+                          '• Crea perfiles para diferentes usuarios\n'
+                          '• Genera rutinas personalizadas según tu IMC\n'
+                          '• Participa en el foro de la comunidad\n'
+                          '• Cambia el tema en configuración\n\n'
+                          'Para más información, contacta al soporte.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Cerrar'),
+                          ),
+                        ],
+                      ),
+                    );
                   },
                 ),
               ],

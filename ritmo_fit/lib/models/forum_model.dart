@@ -3,7 +3,7 @@ import 'package:uuid/uuid.dart';
 
 part 'forum_model.g.dart';
 
-@HiveType(typeId: 2)
+@HiveType(typeId: 4)
 class ForumMessage {
   @HiveField(0)
   final String id;
@@ -57,7 +57,7 @@ class ForumMessage {
   }
 }
 
-@HiveType(typeId: 3)
+@HiveType(typeId: 5)
 class ForumReply {
   @HiveField(0)
   final String id;

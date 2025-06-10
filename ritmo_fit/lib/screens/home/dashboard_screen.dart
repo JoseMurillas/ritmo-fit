@@ -163,7 +163,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               userId: user.id,
               profileId: profile.id,
               targetMuscleGroup: 'Full Body',
-              difficulty: 'Principiante',
             );
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
