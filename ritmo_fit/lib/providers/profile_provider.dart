@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:ritmo_fit/models/user_model.dart';
 import 'package:ritmo_fit/services/database_service.dart';
-import 'package:ritmo_fit/services/workout_service.dart';
+import 'package:ritmo_fit/services/routine_generator_service.dart';
 import 'package:ritmo_fit/models/workout_model.dart';
 import 'package:uuid/uuid.dart';
 import 'package:ritmo_fit/providers/workout_provider.dart';
@@ -79,19 +78,20 @@ class ProfileProvider extends ChangeNotifier {
       else if (bmi < 30) bmiCategory = 'Sobrepeso';
       else bmiCategory = 'Obesidad';
 
-      // Generar rutinas para el plan
-      final uniqueGroups = weeklyPlan.values.toSet().toList();
-      final List<WorkoutRoutine> generatedRoutines = [];
-      for (var group in uniqueGroups) {
-        final routine = WorkoutService.generateRoutine(
-          gender: gender,
-          bmiCategory: bmiCategory,
-          targetMuscleGroup: group,
-          age: age,
-          bmi: bmi,
-        );
-        generatedRoutines.add(routine);
-      }
+      // Crear perfil temporal para generar rutinas
+      final tempProfile = Profile(
+        id: const Uuid().v4(),
+        name: name,
+        age: age,
+        gender: gender,
+        weight: weight,
+        height: height,
+        routines: [],
+        weeklyPlan: weeklyPlan,
+      );
+      
+      // Generar rutinas usando el servicio
+      final List<WorkoutRoutine> generatedRoutines = RoutineGeneratorService.generateRoutinesForProfile(tempProfile);
 
       final profile = Profile(
         id: const Uuid().v4(),

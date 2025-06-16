@@ -70,13 +70,17 @@ class ProfileAdapter extends TypeAdapter<Profile> {
       weight: fields[4] as double,
       height: fields[5] as double,
       routines: (fields[6] as List).cast<WorkoutRoutine>(),
+      weeklyPlan: (fields[7] as Map?)?.cast<String, String>(),
+      muscleMassPercentage: fields[8] as double,
+      fitnessLevel: fields[9] as String?,
+      currentRoutineId: fields[10] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Profile obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -90,7 +94,15 @@ class ProfileAdapter extends TypeAdapter<Profile> {
       ..writeByte(5)
       ..write(obj.height)
       ..writeByte(6)
-      ..write(obj.routines);
+      ..write(obj.routines)
+      ..writeByte(7)
+      ..write(obj.weeklyPlan)
+      ..writeByte(8)
+      ..write(obj.muscleMassPercentage)
+      ..writeByte(9)
+      ..write(obj.fitnessLevel)
+      ..writeByte(10)
+      ..write(obj.currentRoutineId);
   }
 
   @override

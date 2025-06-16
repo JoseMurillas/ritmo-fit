@@ -77,6 +77,15 @@ class Profile {
   @HiveField(7)
   final Map<String, String>? weeklyPlan;
 
+  @HiveField(8)
+  final double muscleMassPercentage;
+
+  @HiveField(9)
+  final String fitnessLevel;
+
+  @HiveField(10)
+  final String? currentRoutineId;
+
   Profile({
     required this.id,
     required this.name,
@@ -86,7 +95,10 @@ class Profile {
     required this.height,
     required this.routines,
     this.weeklyPlan,
-  });
+    this.muscleMassPercentage = 0.0,
+    String? fitnessLevel,
+    this.currentRoutineId,
+  }) : fitnessLevel = fitnessLevel ?? _calculateFitnessLevel(age, muscleMassPercentage, weight, height);
 
   double get bmi => weight / (height * height);
 
@@ -95,6 +107,46 @@ class Profile {
     if (bmi < 25) return 'Normal';
     if (bmi < 30) return 'Sobrepeso';
     return 'Obesidad';
+  }
+
+  static String _calculateFitnessLevel(int age, double muscleMass, double weight, double height) {
+    final bmi = weight / (height * height);
+    
+    // Algoritmo para determinar nivel de fitness basado en edad, IMC y masa muscular
+    int score = 0;
+    
+    // Puntuación por edad
+    if (age <= 25) score += 3;
+    else if (age <= 35) score += 2;
+    else if (age <= 45) score += 1;
+    
+    // Puntuación por IMC
+    if (bmi >= 18.5 && bmi < 25) score += 3;
+    else if (bmi >= 25 && bmi < 30) score += 2;
+    else score += 1;
+    
+    // Puntuación por masa muscular
+    if (muscleMass >= 40) score += 3;
+    else if (muscleMass >= 30) score += 2;
+    else if (muscleMass >= 20) score += 1;
+    
+    // Determinar nivel
+    if (score >= 7) return 'avanzado';
+    else if (score >= 5) return 'intermedio';
+    else return 'principiante';
+  }
+
+  String get fitnessLevelDescription {
+    switch (fitnessLevel) {
+      case 'principiante':
+        return 'Nuevo en el gimnasio o con poca experiencia';
+      case 'intermedio':
+        return 'Experiencia moderada con entrenamientos regulares';
+      case 'avanzado':
+        return 'Experiencia avanzada con rutinas intensas';
+      default:
+        return 'Sin definir';
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -107,6 +159,9 @@ class Profile {
       'height': height,
       'routines': routines.map((r) => r.toJson()).toList(),
       'weeklyPlan': weeklyPlan,
+      'muscleMassPercentage': muscleMassPercentage,
+      'fitnessLevel': fitnessLevel,
+      'currentRoutineId': currentRoutineId,
     };
   }
 
@@ -122,6 +177,9 @@ class Profile {
           .map((r) => WorkoutRoutine.fromJson(r as Map<String, dynamic>))
           .toList(),
       weeklyPlan: (json['weeklyPlan'] as Map?)?.map((k, v) => MapEntry(k as String, v as String)),
+      muscleMassPercentage: json['muscleMassPercentage'] as double? ?? 0.0,
+      fitnessLevel: json['fitnessLevel'] as String?,
+      currentRoutineId: json['currentRoutineId'] as String?,
     );
   }
 } 

@@ -1,120 +1,34 @@
-import 'package:ritmo_fit/models/workout_model.dart';
 import 'package:uuid/uuid.dart';
+import 'package:ritmo_fit/models/workout_model.dart';
 
 class WorkoutService {
-  static WorkoutRoutine generateRoutine({
-    required String gender,
-    required String bmiCategory,
+  static List<WorkoutExercise> generateExercises({
     required String targetMuscleGroup,
-    required int age,
-    required double bmi,
+    required String userGender,
+    required String userBMICategory,
+    required String userAgeCategory,
+    required bool isCardioFocus,
+    required bool isLowImpact,
+    required bool isBeginner,
   }) {
-    final ageCategory = _getAgeCategory(age);
-    final exercises = _getExercisesForCategory(
-      gender: gender,
-      bmiCategory: bmiCategory,
-      targetMuscleGroup: targetMuscleGroup,
-      ageCategory: ageCategory,
-      bmi: bmi,
-    );
-
-    return WorkoutRoutine(
-      id: const Uuid().v4(),
-      name: _getRoutineName(gender, bmiCategory, targetMuscleGroup, ageCategory),
-      description: _getRoutineDescription(gender, bmiCategory, targetMuscleGroup, ageCategory),
-      targetMuscleGroup: targetMuscleGroup,
-      difficulty: _getDifficultyLevel(bmiCategory, ageCategory),
-      exercises: exercises,
-    );
-  }
-
-  static String _getAgeCategory(int age) {
-    if (age < 18) return 'Adolescente';
-    if (age < 30) return 'Joven';
-    if (age < 50) return 'Adulto';
-    if (age < 65) return 'Maduro';
-    return 'Senior';
-  }
-
-  static String _getRoutineName(String gender, String bmiCategory, String targetMuscleGroup, String ageCategory) {
-    final prefix = gender == 'M' ? 'Masculino' : 'Femenino';
-    final category = bmiCategory == 'Bajo peso' ? 'Ganancia Muscular' :
-                    bmiCategory == 'Sobrepeso' ? 'Pérdida de Peso' :
-                    bmiCategory == 'Obesidad' ? 'Quema de Grasa' :
-                    'Mantenimiento';
-    
-    return '$prefix $ageCategory - $category - $targetMuscleGroup';
-  }
-
-  static String _getRoutineDescription(String gender, String bmiCategory, String targetMuscleGroup, String ageCategory) {
-    final intensity = _getIntensityLevel(bmiCategory, ageCategory);
-    final focus = bmiCategory == 'Bajo peso' ? 'ganancia de masa muscular' :
-                 bmiCategory == 'Sobrepeso' ? 'pérdida de peso y tonificación' :
-                 bmiCategory == 'Obesidad' ? 'quema de grasa y cardio' :
-                 'mantenimiento y fuerza';
-    
-    return 'Rutina de $targetMuscleGroup con intensidad $intensity, diseñada para ${gender == 'M' ? 'hombres' : 'mujeres'} en el rango $ageCategory, enfocada en $focus.';
-  }
-
-  static String _getIntensityLevel(String bmiCategory, String ageCategory) {
-    // Ajustar intensidad según edad y IMC
-    if (ageCategory == 'Senior' || ageCategory == 'Adolescente') {
-      return 'baja a moderada';
-    }
-    
-    return bmiCategory == 'Bajo peso' ? 'alta' :
-           bmiCategory == 'Sobrepeso' ? 'moderada a alta' :
-           bmiCategory == 'Obesidad' ? 'moderada' :
-           'media a alta';
-  }
-
-  static String _getDifficultyLevel(String bmiCategory, String ageCategory) {
-    // Ajustar dificultad según edad
-    if (ageCategory == 'Senior') return 'Principiante';
-    if (ageCategory == 'Adolescente') return 'Principiante';
-    
-    return bmiCategory == 'Bajo peso' ? 'Intermedio' :
-           bmiCategory == 'Sobrepeso' ? 'Principiante' :
-           bmiCategory == 'Obesidad' ? 'Principiante' :
-           'Intermedio';
-  }
-
-  static List<WorkoutExercise> _getExercisesForCategory({
-    required String gender,
-    required String bmiCategory,
-    required String targetMuscleGroup,
-    required String ageCategory,
-    required double bmi,
-  }) {
-    final exercises = <WorkoutExercise>[];
-    final isCardioFocus = bmiCategory == 'Sobrepeso' || bmiCategory == 'Obesidad';
-    final isLowImpact = ageCategory == 'Senior' || bmi > 30;
-    final isBeginner = ageCategory == 'Adolescente' || ageCategory == 'Senior';
-    
-    switch (targetMuscleGroup) {
-      case 'Piernas':
-        exercises.addAll(_getPiernaExercises(gender, bmiCategory, ageCategory, isCardioFocus, isLowImpact, isBeginner));
-        break;
-      case 'Brazos':
-        exercises.addAll(_getBrazosExercises(gender, bmiCategory, ageCategory, isCardioFocus, isLowImpact, isBeginner));
-        break;
-      case 'Pecho':
-        exercises.addAll(_getPechoExercises(gender, bmiCategory, ageCategory, isCardioFocus, isLowImpact, isBeginner));
-        break;
-      case 'Hombros':
-        exercises.addAll(_getHombrosExercises(gender, bmiCategory, ageCategory, isCardioFocus, isLowImpact, isBeginner));
-        break;
-      case 'Espalda':
-        exercises.addAll(_getEspaldaExercises(gender, bmiCategory, ageCategory, isCardioFocus, isLowImpact, isBeginner));
-        break;
-      case 'Core':
-        exercises.addAll(_getCoreExercises(gender, bmiCategory, ageCategory, isCardioFocus, isLowImpact, isBeginner));
-        break;
+    switch (targetMuscleGroup.toLowerCase()) {
+      case 'piernas':
+        return _getPiernaExercises(userGender, userBMICategory, userAgeCategory, isCardioFocus, isLowImpact, isBeginner);
+      case 'brazos':
+        return _getBrazosExercises(userGender, userBMICategory, userAgeCategory, isCardioFocus, isLowImpact, isBeginner);
+      case 'pecho':
+        return _getPechoExercises(userGender, userBMICategory, userAgeCategory, isCardioFocus, isLowImpact, isBeginner);
+      case 'hombros':
+        return _getHombrosExercises(userGender, userBMICategory, userAgeCategory, isCardioFocus, isLowImpact, isBeginner);
+      case 'espalda':
+        return _getEspaldaExercises(userGender, userBMICategory, userAgeCategory, isCardioFocus, isLowImpact, isBeginner);
+      case 'core':
+        return _getCoreExercises(userGender, userBMICategory, userAgeCategory, isCardioFocus, isLowImpact, isBeginner);
+      case 'full body':
+        return _getFullBodyExercises(userGender, userBMICategory, userAgeCategory, isCardioFocus, isLowImpact, isBeginner);
       default:
-        exercises.addAll(_getFullBodyExercises(gender, bmiCategory, ageCategory, isCardioFocus, isLowImpact, isBeginner));
+        return _getFullBodyExercises(userGender, userBMICategory, userAgeCategory, isCardioFocus, isLowImpact, isBeginner);
     }
-
-    return exercises;
   }
 
   static List<WorkoutExercise> _getPiernaExercises(String gender, String bmiCategory, String ageCategory, bool isCardioFocus, bool isLowImpact, bool isBeginner) {
@@ -128,6 +42,7 @@ class WorkoutService {
           description: 'Sentadillas asistidas con silla para bajo impacto',
           sets: 2,
           reps: 10,
+          muscleGroup: 'Piernas',
           status: 'pending',
         ),
         WorkoutExercise(
@@ -136,6 +51,7 @@ class WorkoutService {
           description: 'Ejercicio para pantorrillas',
           sets: 3,
           reps: 15,
+          muscleGroup: 'Piernas',
           status: 'pending',
         ),
       ]);
@@ -147,6 +63,7 @@ class WorkoutService {
           description: 'Ejercicio básico para piernas',
           sets: isBeginner ? 3 : 4,
           reps: bmiCategory == 'Sobrepeso' ? 12 : (isBeginner ? 10 : 15),
+          muscleGroup: 'Piernas',
           status: 'pending',
         ),
         WorkoutExercise(
@@ -155,6 +72,7 @@ class WorkoutService {
           description: 'Ejercicio para espalda baja y piernas',
           sets: isBeginner ? 2 : 3,
           reps: isBeginner ? 8 : 12,
+          muscleGroup: 'Piernas',
           status: 'pending',
         ),
       ]);
@@ -167,7 +85,8 @@ class WorkoutService {
           name: 'Caminar en el Lugar',
           description: 'Cardio de bajo impacto',
           sets: 1,
-          reps: 60, // segundos
+          reps: 60,
+          muscleGroup: 'Piernas',
           status: 'pending',
         ),
       );
@@ -187,6 +106,7 @@ class WorkoutService {
         description: isLowImpact ? 'Ejercicio con banda elástica' : 'Ejercicio para bíceps con mancuernas',
         sets: isBeginner ? 2 : 3,
         reps: reps,
+        muscleGroup: 'Brazos',
         status: 'pending',
       ),
       WorkoutExercise(
@@ -195,6 +115,7 @@ class WorkoutService {
         description: 'Ejercicio para tríceps',
         sets: isBeginner ? 2 : 3,
         reps: reps,
+        muscleGroup: 'Brazos',
         status: 'pending',
       ),
     ]);
@@ -207,6 +128,7 @@ class WorkoutService {
           description: 'Ejercicio para antebrazos y bíceps',
           sets: 3,
           reps: 12,
+          muscleGroup: 'Brazos',
           status: 'pending',
         ),
       );
@@ -226,6 +148,7 @@ class WorkoutService {
           description: 'Flexiones modificadas para principiantes',
           sets: 2,
           reps: gender == 'M' ? 8 : 5,
+          muscleGroup: 'Pecho',
           status: 'pending',
         ),
         WorkoutExercise(
@@ -234,6 +157,7 @@ class WorkoutService {
           description: 'Ejercicio con banda elástica',
           sets: 3,
           reps: 12,
+          muscleGroup: 'Pecho',
           status: 'pending',
         ),
       ]);
@@ -245,6 +169,7 @@ class WorkoutService {
           description: 'Ejercicio principal para pecho',
           sets: bmiCategory == 'Sobrepeso' ? 3 : 4,
           reps: bmiCategory == 'Sobrepeso' ? 10 : 12,
+          muscleGroup: 'Pecho',
           status: 'pending',
         ),
         WorkoutExercise(
@@ -253,6 +178,7 @@ class WorkoutService {
           description: 'Ejercicio corporal para pecho',
           sets: 3,
           reps: gender == 'M' ? 12 : 8,
+          muscleGroup: 'Pecho',
           status: 'pending',
         ),
       ]);
@@ -271,6 +197,7 @@ class WorkoutService {
         description: 'Ejercicio para deltoides laterales',
         sets: isBeginner ? 2 : 3,
         reps: 12,
+        muscleGroup: 'Hombros',
         status: 'pending',
       ),
       WorkoutExercise(
@@ -279,6 +206,7 @@ class WorkoutService {
         description: 'Ejercicio principal para hombros',
         sets: isBeginner ? 2 : 3,
         reps: isBeginner ? 8 : 10,
+        muscleGroup: 'Hombros',
         status: 'pending',
       ),
     ]);
@@ -291,6 +219,7 @@ class WorkoutService {
           description: 'Ejercicio para deltoides frontales',
           sets: 3,
           reps: 15,
+          muscleGroup: 'Hombros',
           status: 'pending',
         ),
       );
@@ -309,6 +238,7 @@ class WorkoutService {
         description: 'Ejercicio para dorsales',
         sets: isBeginner ? 2 : 3,
         reps: 12,
+        muscleGroup: 'Espalda',
         status: 'pending',
       ),
       WorkoutExercise(
@@ -317,6 +247,7 @@ class WorkoutService {
         description: 'Ejercicio para espalda baja',
         sets: 2,
         reps: 10,
+        muscleGroup: 'Espalda',
         status: 'pending',
       ),
     ]);
@@ -326,9 +257,10 @@ class WorkoutService {
         WorkoutExercise(
           id: const Uuid().v4(),
           name: 'Dominadas Asistidas',
-          description: 'Ejercicio compuesto para espalda',
-          sets: 2,
-          reps: gender == 'M' ? 6 : 4,
+          description: 'Ejercicio para dorsales con asistencia',
+          sets: 3,
+          reps: 8,
+          muscleGroup: 'Espalda',
           status: 'pending',
         ),
       );
@@ -343,30 +275,33 @@ class WorkoutService {
     exercises.addAll([
       WorkoutExercise(
         id: const Uuid().v4(),
-        name: isLowImpact ? 'Plancha Modificada' : 'Plancha',
-        description: isLowImpact ? 'Plancha desde rodillas' : 'Ejercicio para core',
-        sets: isBeginner ? 2 : 3,
-        reps: 1, // tiempo en segundos
+        name: isLowImpact ? 'Plank Modificado' : 'Plank',
+        description: 'Ejercicio de estabilidad del core',
+        sets: 3,
+        reps: isBeginner ? 20 : 45,
+        muscleGroup: 'Core',
         status: 'pending',
       ),
       WorkoutExercise(
         id: const Uuid().v4(),
         name: 'Abdominales',
-        description: 'Ejercicio para abdominales',
+        description: 'Ejercicio básico para abdominales',
         sets: isBeginner ? 2 : 3,
-        reps: isBeginner ? 10 : 15,
+        reps: isBeginner ? 10 : 20,
+        muscleGroup: 'Core',
         status: 'pending',
       ),
     ]);
 
-    if (isCardioFocus && !isLowImpact) {
+    if (!isLowImpact) {
       exercises.add(
         WorkoutExercise(
           id: const Uuid().v4(),
           name: 'Mountain Climbers',
-          description: 'Ejercicio cardio y core',
+          description: 'Ejercicio cardio para core',
           sets: 3,
-          reps: isBeginner ? 10 : 20,
+          reps: 20,
+          muscleGroup: 'Core',
           status: 'pending',
         ),
       );
@@ -378,12 +313,13 @@ class WorkoutService {
   static List<WorkoutExercise> _getFullBodyExercises(String gender, String bmiCategory, String ageCategory, bool isCardioFocus, bool isLowImpact, bool isBeginner) {
     final exercises = <WorkoutExercise>[];
     
-    // Combinación de ejercicios para todo el cuerpo
-    exercises.addAll([
-      ..._getPiernaExercises(gender, bmiCategory, ageCategory, isCardioFocus, isLowImpact, isBeginner).take(1),
-      ..._getBrazosExercises(gender, bmiCategory, ageCategory, isCardioFocus, isLowImpact, isBeginner).take(1),
-      ..._getCoreExercises(gender, bmiCategory, ageCategory, isCardioFocus, isLowImpact, isBeginner).take(1),
-    ]);
+    // Combinar ejercicios de todos los grupos musculares
+    exercises.addAll(_getPechoExercises(gender, bmiCategory, ageCategory, isCardioFocus, isLowImpact, isBeginner).take(1));
+    exercises.addAll(_getEspaldaExercises(gender, bmiCategory, ageCategory, isCardioFocus, isLowImpact, isBeginner).take(1));
+    exercises.addAll(_getPiernaExercises(gender, bmiCategory, ageCategory, isCardioFocus, isLowImpact, isBeginner).take(1));
+    exercises.addAll(_getHombrosExercises(gender, bmiCategory, ageCategory, isCardioFocus, isLowImpact, isBeginner).take(1));
+    exercises.addAll(_getBrazosExercises(gender, bmiCategory, ageCategory, isCardioFocus, isLowImpact, isBeginner).take(1));
+    exercises.addAll(_getCoreExercises(gender, bmiCategory, ageCategory, isCardioFocus, isLowImpact, isBeginner).take(1));
 
     return exercises;
   }

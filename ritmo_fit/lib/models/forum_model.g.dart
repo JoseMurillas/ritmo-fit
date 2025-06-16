@@ -8,7 +8,7 @@ part of 'forum_model.dart';
 
 class ForumMessageAdapter extends TypeAdapter<ForumMessage> {
   @override
-  final int typeId = 4;
+  final int typeId = 7;
 
   @override
   ForumMessage read(BinaryReader reader) {
@@ -57,7 +57,7 @@ class ForumMessageAdapter extends TypeAdapter<ForumMessage> {
 
 class ForumReplyAdapter extends TypeAdapter<ForumReply> {
   @override
-  final int typeId = 5;
+  final int typeId = 8;
 
   @override
   ForumReply read(BinaryReader reader) {
@@ -94,6 +94,98 @@ class ForumReplyAdapter extends TypeAdapter<ForumReply> {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is ForumReplyAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class ForumPostAdapter extends TypeAdapter<ForumPost> {
+  @override
+  final int typeId = 9;
+
+  @override
+  ForumPost read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return ForumPost(
+      id: fields[0] as String,
+      authorName: fields[1] as String,
+      content: fields[2] as String,
+      createdAt: fields[3] as DateTime,
+      likes: (fields[4] as List).cast<String>(),
+      comments: (fields[5] as List).cast<Comment>(),
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, ForumPost obj) {
+    writer
+      ..writeByte(6)
+      ..writeByte(0)
+      ..write(obj.id)
+      ..writeByte(1)
+      ..write(obj.authorName)
+      ..writeByte(2)
+      ..write(obj.content)
+      ..writeByte(3)
+      ..write(obj.createdAt)
+      ..writeByte(4)
+      ..write(obj.likes)
+      ..writeByte(5)
+      ..write(obj.comments);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ForumPostAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class CommentAdapter extends TypeAdapter<Comment> {
+  @override
+  final int typeId = 10;
+
+  @override
+  Comment read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return Comment(
+      id: fields[0] as String,
+      authorName: fields[1] as String,
+      content: fields[2] as String,
+      createdAt: fields[3] as DateTime,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, Comment obj) {
+    writer
+      ..writeByte(4)
+      ..writeByte(0)
+      ..write(obj.id)
+      ..writeByte(1)
+      ..write(obj.authorName)
+      ..writeByte(2)
+      ..write(obj.content)
+      ..writeByte(3)
+      ..write(obj.createdAt);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CommentAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

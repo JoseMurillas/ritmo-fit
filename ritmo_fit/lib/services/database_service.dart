@@ -1,5 +1,4 @@
 import 'package:hive/hive.dart';
-import 'package:uuid/uuid.dart';
 import 'package:ritmo_fit/models/user_model.dart';
 import 'package:ritmo_fit/models/forum_model.dart';
 
