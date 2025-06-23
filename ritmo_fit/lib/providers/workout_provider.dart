@@ -159,6 +159,40 @@ class WorkoutProvider extends ChangeNotifier {
     }
   }
 
+  /// Regenera todas las rutinas para el perfil actual con los nuevos ejercicios mejorados
+  Future<void> regenerateRoutines() async {
+    if (_currentProfile == null) {
+      print('❌ No hay perfil actual para regenerar rutinas');
+      return;
+    }
+
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      print('🔄 Regenerando rutinas mejoradas para ${_currentProfile!.name}...');
+      
+      // Forzar regeneración de rutinas
+      await _generateRoutinesForProfile(_currentProfile!);
+      
+      print('✅ Rutinas regeneradas exitosamente. Total: ${_routines.length}');
+      print('📋 Rutinas disponibles:');
+      for (var routine in _routines) {
+        print('  - ${routine.name} (${routine.exercises.length} ejercicios)');
+      }
+      
+      _isLoading = false;
+      notifyListeners();
+      
+    } catch (e) {
+      print('❌ Error regenerando rutinas: $e');
+      _error = 'Error al regenerar rutinas: $e';
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   void setCurrentRoutine(WorkoutRoutine routine) {
     _currentRoutine = routine;
     

@@ -7,6 +7,7 @@ import 'package:ritmo_fit/providers/workout_provider.dart';
 import 'package:ritmo_fit/screens/workout/workout_session_screen.dart';
 import 'package:ritmo_fit/screens/home/statistics_screen.dart';
 import 'package:ritmo_fit/screens/home/settings_screen.dart';
+import 'package:ritmo_fit/screens/home/profiles_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -168,7 +169,13 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               ),
               child: ElevatedButton.icon(
                 onPressed: () {
-                  DefaultTabController.of(context)?.animateTo(2);
+                  // Navegar directamente a la pantalla de perfiles
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ProfilesScreen(),
+                    ),
+                  );
                 },
                 icon: const Icon(Icons.person_add, color: Colors.white),
                 label: const Text(

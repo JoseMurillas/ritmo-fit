@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:ritmo_fit/providers/auth_provider.dart';
 import 'package:ritmo_fit/providers/profile_provider.dart';
 import 'package:ritmo_fit/models/user_model.dart';
@@ -307,7 +308,39 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
     final profiles = profileProvider.profiles;
 
     return Scaffold(
-      body: profiles.isEmpty
+      appBar: AppBar(
+        title: Text(
+          'Mis Perfiles',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFF8F9FA),
+              Color(0xFFE9ECEF),
+            ],
+          ),
+        ),
+        child: profiles.isEmpty
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -366,6 +399,7 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
                 );
               },
             ),
+        ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddProfileDialog,
         child: const Icon(Icons.add),

@@ -24,11 +24,25 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> with Ticker
   bool _isResting = false;
   int _restTimeRemaining = 0;
   Timer? _restTimer;
+  late WorkoutSession _currentSession;
 
   @override
   void initState() {
     super.initState();
     _initAnimation();
+    // Crear una copia mutable de la sesión
+    _currentSession = WorkoutSession(
+      id: widget.session.id,
+      routineId: widget.session.routineId,
+      profileId: widget.session.profileId,
+      date: widget.session.date,
+      startTime: widget.session.startTime,
+      endTime: widget.session.endTime,
+      exerciseLogs: List<ExerciseLog>.from(widget.session.exerciseLogs),
+      status: widget.session.status,
+      notes: widget.session.notes,
+      rating: widget.session.rating,
+    );
   }
 
   void _initAnimation() {
@@ -108,7 +122,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> with Ticker
   }
 
   Widget _buildProgressHeader() {
-    final totalExercises = widget.session.exerciseLogs.length;
+    final totalExercises = _currentSession.exerciseLogs.length;
     final progress = totalExercises > 0 ? (_currentExerciseIndex + 1) / totalExercises : 0.0;
 
     return Container(
@@ -156,13 +170,13 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> with Ticker
   }
 
   Widget _buildExerciseScreen() {
-    if (widget.session.exerciseLogs.isEmpty || _currentExerciseIndex >= widget.session.exerciseLogs.length) {
+    if (_currentSession.exerciseLogs.isEmpty || _currentExerciseIndex >= _currentSession.exerciseLogs.length) {
       return const Center(
         child: Text('No hay ejercicios disponibles'),
       );
     }
 
-    final currentExercise = widget.session.exerciseLogs[_currentExerciseIndex];
+    final currentExercise = _currentSession.exerciseLogs[_currentExerciseIndex];
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -483,7 +497,10 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> with Ticker
   }
 
   Widget _buildRestScreen() {
-    final progress = _restTimeRemaining / 60.0;
+    // Calcular el progreso basado en el tiempo inicial vs actual
+    final initialTime = 60.0; // El tiempo base de descanso
+    final maxTime = _restTimeRemaining > initialTime ? _restTimeRemaining.toDouble() : initialTime;
+    final progress = _restTimeRemaining / maxTime;
     
     return Center(
       child: Container(
@@ -562,7 +579,54 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> with Ticker
               ),
               textAlign: TextAlign.center,
             ),
+            const SizedBox(height: 12),
+            
+            // Mostrar tiempo original vs ajustado
+            if (_restTimeRemaining != 60)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF667eea).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: const Color(0xFF667eea).withOpacity(0.3),
+                  ),
+                ),
+                child: Text(
+                  _restTimeRemaining > 60 
+                      ? 'Tiempo extendido +${_restTimeRemaining - 60}s'
+                      : 'Tiempo reducido -${60 - _restTimeRemaining}s',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF667eea),
+                  ),
+                ),
+              ),
             const SizedBox(height: 24),
+            
+            // Botones de ajuste de tiempo
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                                 _buildTimeAdjustButton(
+                   '-30s',
+                   Icons.remove,
+                   const Color(0xFFE53E3E),
+                   () => _adjustRestTime(-30),
+                 ),
+                _buildTimeAdjustButton(
+                  '+30s',
+                  Icons.add,
+                  const Color(0xFF667eea),
+                  () => _adjustRestTime(30),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // Botón saltar descanso
             ElevatedButton(
               onPressed: () {
                 _restTimer?.cancel();
@@ -653,48 +717,77 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> with Ticker
     );
   }
 
-  void _completeSet(int setIndex) {
-    final currentExercise = widget.session.exerciseLogs[_currentExerciseIndex];
+  void _completeSet(int setIndex) async {
+    final currentExercise = _currentSession.exerciseLogs[_currentExerciseIndex];
     
-    // Primero actualizar el estado
+    // Actualizar el estado directamente
     setState(() {
-      // Marcar la serie como completada
+      // Marcar la serie como completada directamente en la sesión actual
       if (setIndex < currentExercise.setLogs.length) {
-        final updatedSetLogs = List<SetLog>.from(currentExercise.setLogs);
-        updatedSetLogs[setIndex] = SetLog(
-          setNumber: updatedSetLogs[setIndex].setNumber,
-          reps: updatedSetLogs[setIndex].reps,
-          weight: updatedSetLogs[setIndex].weight,
-          restTimeSeconds: updatedSetLogs[setIndex].restTimeSeconds,
+        // Actualizar directamente en la lista existente
+        _currentSession.exerciseLogs[_currentExerciseIndex].setLogs[setIndex] = SetLog(
+          setNumber: currentExercise.setLogs[setIndex].setNumber,
+          reps: currentExercise.setLogs[setIndex].reps,
+          weight: currentExercise.setLogs[setIndex].weight,
+          restTimeSeconds: currentExercise.setLogs[setIndex].restTimeSeconds,
           completed: true,
         );
-        
-        // Actualizar el ejercicio con las series modificadas
-        final updatedExercise = ExerciseLog(
-          exerciseId: currentExercise.exerciseId,
-          exerciseName: currentExercise.exerciseName,
-          setLogs: updatedSetLogs,
-          completed: currentExercise.completed,
-          notes: currentExercise.notes,
-          completedAt: currentExercise.completedAt,
+        print('✅ Serie ${setIndex + 1} marcada como completada!');
+      }
+    });
+    
+    // Actualizar también en el provider si está disponible
+    try {
+      final workoutProvider = Provider.of<WorkoutProvider>(context, listen: false);
+      workoutProvider.completeSet(
+        currentExercise.exerciseId, 
+        setIndex + 1, 
+        currentExercise.setLogs[setIndex].reps, 
+        currentExercise.setLogs[setIndex].weight
+      );
+    } catch (e) {
+      print('Error actualizando provider: $e');
+    }
+    
+    // Verificar si es la última serie del ejercicio actual
+    final isLastSetOfExercise = setIndex >= currentExercise.setLogs.length - 1;
+    // Verificar si es el último ejercicio de la rutina
+    final isLastExercise = _currentExerciseIndex >= _currentSession.exerciseLogs.length - 1;
+    
+    // Iniciar descanso SIEMPRE, excepto si es la última serie del último ejercicio
+    if (!(isLastSetOfExercise && isLastExercise)) {
+      _startRest();
+    }
+    
+    // Verificar si se completaron todas las series del ejercicio
+    final allSetsCompleted = currentExercise.setLogs.every((set) => set.completed);
+    
+    if (allSetsCompleted) {
+      // Si se completaron todas las series, marcar ejercicio como completado
+      try {
+        final workoutProvider = Provider.of<WorkoutProvider>(context, listen: false);
+        await workoutProvider.completeExercise(
+          currentExercise.exerciseId,
+          notes: 'Todas las series completadas',
         );
-        
-        // Actualizar la sesión
-        final updatedExerciseLogs = List<ExerciseLog>.from(widget.session.exerciseLogs);
-        updatedExerciseLogs[_currentExerciseIndex] = updatedExercise;
+        print('✅ Ejercicio ${currentExercise.exerciseName} totalmente completado');
+      } catch (e) {
+        print('❌ Error marcando ejercicio como completado: $e');
       }
-    });
-    
-    // Mostrar notificación verde de éxito con animación
-    _showSuccessNotification('¡Serie ${setIndex + 1} completada! 💪');
-    
-    // Pequeño delay para que se vea la animación
-    Future.delayed(const Duration(milliseconds: 500), () {
-      // Iniciar descanso si no es la última serie
-      if (setIndex < currentExercise.setLogs.length - 1) {
-        _startRest();
+      
+      // Auto-avanzar al siguiente ejercicio después del descanso (si no es el último)
+      if (!isLastExercise) {
+        // No hacer auto-avance inmediato, dejar que termine el descanso
+        print('📝 Esperando fin de descanso para avanzar al siguiente ejercicio');
+      } else {
+        // Si es el último ejercicio, finalizar después de un breve delay
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            _finishWorkout();
+          }
+        });
       }
-    });
+    }
   }
 
   void _startRest() {
@@ -720,21 +813,156 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> with Ticker
         
         // Mostrar notificación de que el descanso terminó
         _showRestCompleteNotification();
+        
+        // Verificar si necesitamos auto-avanzar al siguiente ejercicio
+        final currentExercise = _currentSession.exerciseLogs[_currentExerciseIndex];
+        final allSetsCompleted = currentExercise.setLogs.every((set) => set.completed);
+        final isLastExercise = _currentExerciseIndex >= _currentSession.exerciseLogs.length - 1;
+        
+        // Si completamos todas las series y no es el último ejercicio, avanzar automáticamente
+        if (allSetsCompleted && !isLastExercise) {
+          print('🚀 Auto-avanzando al siguiente ejercicio después del descanso');
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) {
+              _nextExercise();
+            }
+          });
+        }
       }
     });
   }
 
-  void _nextExercise() {
-    if (_currentExerciseIndex < widget.session.exerciseLogs.length - 1) {
+  void _adjustRestTime(int seconds) {
+    setState(() {
+      _restTimeRemaining += seconds;
+      // No permitir tiempo negativo
+      if (_restTimeRemaining < 0) {
+        _restTimeRemaining = 0;
+      }
+      // Máximo 5 minutos de descanso
+      if (_restTimeRemaining > 300) {
+        _restTimeRemaining = 300;
+      }
+    });
+
+    // Mostrar feedback al usuario
+    final message = seconds > 0 
+        ? '¡Se agregaron $seconds segundos! ⏰'
+        : '¡Se redujeron ${seconds.abs()} segundos! ⚡';
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: seconds > 0 
+            ? const Color(0xFF667eea) 
+            : const Color(0xFFED8936),
+        duration: const Duration(seconds: 1),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  Widget _buildTimeAdjustButton(String label, IconData icon, Color color, VoidCallback onPressed) {
+    // Lógica para habilitar/deshabilitar botones
+    bool isEnabled = true;
+    if (label == '-30s') {
+      isEnabled = _restTimeRemaining > 30; // Solo restar si hay más de 30s
+    } else if (label == '+30s') {
+      isEnabled = _restTimeRemaining < 300; // Solo agregar si es menos de 5 minutos
+    }
+    
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: isEnabled ? [
+          BoxShadow(
+            color: color.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ] : [],
+      ),
+      child: ElevatedButton.icon(
+        onPressed: isEnabled && _restTimeRemaining > 0 ? onPressed : null,
+        icon: Icon(icon, size: 18),
+        label: Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isEnabled ? color : Colors.grey[300],
+          foregroundColor: isEnabled ? Colors.white : Colors.grey[600],
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 0,
+        ),
+      ),
+    );
+  }
+
+  void _nextExercise() async {
+    // Marcar ejercicio actual como completado si tiene series completadas
+    final currentExercise = _currentSession.exerciseLogs[_currentExerciseIndex];
+    final completedSets = currentExercise.setLogs.where((set) => set.completed).length;
+    
+    if (completedSets > 0) {
+      try {
+        final workoutProvider = Provider.of<WorkoutProvider>(context, listen: false);
+        await workoutProvider.completeExercise(
+          currentExercise.exerciseId,
+          notes: 'Ejercicio completado con $completedSets series',
+        );
+        print('✅ Ejercicio ${currentExercise.exerciseName} marcado como completado');
+      } catch (e) {
+        print('❌ Error marcando ejercicio como completado: $e');
+      }
+    }
+
+    // Cancelar timer de descanso si está activo
+    _restTimer?.cancel();
+    
+    if (_currentExerciseIndex < _currentSession.exerciseLogs.length - 1) {
       setState(() {
         _currentExerciseIndex++;
+        _isResting = false; // Asegurarse de que no esté en descanso
+        _restTimeRemaining = 0;
       });
     } else {
       _finishWorkout();
     }
   }
 
-  void _finishWorkout() {
+  void _finishWorkout() async {
+    // Guardar progreso antes de finalizar
+    try {
+      final workoutProvider = Provider.of<WorkoutProvider>(context, listen: false);
+      
+      // Marcar sesión como completada
+      await workoutProvider.finishWorkoutSession(
+        notes: 'Entrenamiento completado',
+        rating: 5.0,
+      );
+      
+      print('✅ Progreso guardado exitosamente');
+    } catch (e) {
+      print('❌ Error guardando progreso: $e');
+    }
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -743,14 +971,14 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> with Ticker
           style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
         ),
         content: Text(
-          '¡Excelente trabajo! Has completado tu entrenamiento.',
+          '¡Excelente trabajo! Has completado tu entrenamiento y tu progreso ha sido guardado.',
           style: GoogleFonts.poppins(),
         ),
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).pop();
+              Navigator.of(context).pop(); // Cerrar diálogo
+              Navigator.of(context).pop(); // Volver a pantalla anterior
             },
             child: Text(
               'Finalizar',
